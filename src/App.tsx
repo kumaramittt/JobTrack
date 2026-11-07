@@ -9,6 +9,7 @@ import { CompaniesPage } from './pages/CompaniesPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { KanbanPage } from './pages/KanbanPage';
+import { InterviewCalendarPage } from './pages/InterviewCalendarPage';
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
             <Route path="/" element={<DashboardPage />} />
             <Route path="/applications" element={<MyApplicationsPage />} />
             <Route path="/kanban" element={<KanbanPage />} />
+            <Route path="/calendar" element={<InterviewCalendarPage />} />
             <Route path="/add" element={<AddApplicationPage />} />
             <Route path="/companies" element={<CompaniesPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />

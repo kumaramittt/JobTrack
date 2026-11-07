@@ -16,6 +16,10 @@ export interface JobApplication {
   contactPerson?: string;
   contactEmail?: string;
   interviewDate?: string;
+  interviewTime?: string; // HH:mm (e.g. '14:30' or '10:00 AM')
+  interviewType?: 'Online' | 'Offline';
+  interviewLink?: string;
+  interviewStatus?: 'Scheduled' | 'Completed' | 'Rescheduled' | 'Cancelled';
   createdAt: string;
   updatedAt: string;
 }

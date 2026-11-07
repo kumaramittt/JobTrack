@@ -24,6 +24,7 @@ import {
   User,
   AlertCircle,
   Kanban,
+  CalendarDays,
 } from 'lucide-react';
 import { useJobContext } from '../context/JobContext';
 import { ApplicationModal } from '../components/ApplicationModal';
@@ -81,10 +82,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = () => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
+  const scheduledInterviewsCount = applications.filter((a) => Boolean(a.interviewDate)).length;
+
   const navLinks = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard, exact: true },
     { to: '/applications', label: 'My Applications', icon: Briefcase, count: applications.length },
     { to: '/kanban', label: 'Kanban Board', icon: Kanban },
+    { to: '/calendar', label: 'Interview Calendar', icon: CalendarDays, count: scheduledInterviewsCount > 0 ? scheduledInterviewsCount : undefined },
     { to: '/add', label: 'Add New Application', icon: PlusCircle },
     { to: '/companies', label: 'Companies', icon: Building2 },
     { to: '/analytics', label: 'Analytics', icon: BarChart3 },
@@ -100,6 +104,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = () => {
         return 'My Applications';
       case '/kanban':
         return 'Kanban Workflow Board';
+      case '/calendar':
+        return 'Interview Calendar';
       case '/add':
         return 'Add New Application';
       case '/companies':
@@ -115,7 +121,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = () => {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (location.pathname !== '/applications' && location.pathname !== '/kanban') {
+    if (location.pathname !== '/applications' && location.pathname !== '/kanban' && location.pathname !== '/calendar') {
       navigate('/applications');
     }
   };

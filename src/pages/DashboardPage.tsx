@@ -363,6 +363,15 @@ export const DashboardPage: React.FC = () => {
                     "{upcomingInterview.notes}"
                   </p>
                 )}
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/calendar')}
+                  className="mt-3 w-full py-2 px-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>View in Interview Calendar</span>
+                </button>
               </div>
             ) : (
               <div className="mt-6 text-center py-4">
@@ -375,6 +384,14 @@ export const DashboardPage: React.FC = () => {
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-xs mx-auto">
                   When you update an application to "Interview" with a date, reminders will appear here.
                 </p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/calendar')}
+                  className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-medium transition-colors cursor-pointer"
+                >
+                  <Calendar className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Open Calendar</span>
+                </button>
               </div>
             )}
           </div>
