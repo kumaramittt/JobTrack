@@ -93,8 +93,8 @@ export const INITIAL_DEMO_APPLICATIONS: JobApplication[] = [
 ];
 
 export const DEFAULT_USER_PROFILE: UserProfile = {
-  name: 'Amit Kumar',
-  email: 'amitkumar678793@gmail.com',
+  name: 'Shubham Sharma',
+  email: 'sharmashubham23@gmail.com',
   targetRole: 'Full Stack / Frontend Developer',
   location: 'Bangalore, India',
 };
@@ -169,12 +169,14 @@ export function getStoredProfile(): UserProfile {
     const data = localStorage.getItem(STORAGE_KEYS.PROFILE);
     if (!data) return DEFAULT_USER_PROFILE;
     const parsed = JSON.parse(data);
-    // Automatically migrate legacy demo name if present
-    if (parsed.name === 'Alex Morgan' || !parsed.name) {
-      parsed.name = 'Amit Kumar';
-      if (parsed.email === 'alex.morgan@workmail.com') {
-        parsed.email = 'amitkumar678793@gmail.com';
-      }
+    // Automatically migrate legacy demo names if present
+    if (parsed.name === 'Alex Morgan' || parsed.name === 'Amit Kumar' || !parsed.name) {
+      parsed.name = 'Shubham Sharma';
+      parsed.email = 'sharmashubham23@gmail.com';
+      localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(parsed));
+    }
+    if (parsed.email === 'alex.morgan@workmail.com' || parsed.email === 'amitkumar678793@gmail.com') {
+      parsed.email = 'sharmashubham23@gmail.com';
       localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(parsed));
     }
     return { ...DEFAULT_USER_PROFILE, ...parsed };

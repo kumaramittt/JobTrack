@@ -8,6 +8,7 @@ import { AddApplicationPage } from './pages/AddApplicationPage';
 import { CompaniesPage } from './pages/CompaniesPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { KanbanPage } from './pages/KanbanPage';
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
           <Route element={<DashboardLayout />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/applications" element={<MyApplicationsPage />} />
+            <Route path="/kanban" element={<KanbanPage />} />
             <Route path="/add" element={<AddApplicationPage />} />
             <Route path="/companies" element={<CompaniesPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />

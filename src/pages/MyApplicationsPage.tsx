@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Search,
   Filter,
@@ -15,6 +16,8 @@ import {
   FileText,
   UserCheck,
   RotateCcw,
+  Eye,
+  Kanban,
 } from 'lucide-react';
 import { useJobContext } from '../context/JobContext';
 import { JobApplication, JobStatus, JobType } from '../types/job';
@@ -24,10 +27,12 @@ import { CompanyAvatar } from '../components/CompanyAvatar';
 import { EmptyState } from '../components/EmptyState';
 import { ApplicationModal } from '../components/ApplicationModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
+import { ApplicationDetailsModal } from '../components/ApplicationDetailsModal';
 
 type SortOption = 'date-desc' | 'date-asc' | 'company-asc' | 'company-desc';
 
 export const MyApplicationsPage: React.FC = () => {
+  const navigate = useNavigate();
   const {
     applications,
     searchQuery,
@@ -43,6 +48,7 @@ export const MyApplicationsPage: React.FC = () => {
   const [selectedJobType, setSelectedJobType] = useState<string>('All');
   const [sortBy, setSortBy] = useState<SortOption>('date-desc');
 
+  const [activeViewJob, setActiveViewJob] = useState<JobApplication | null>(null);
   const [activeEditJob, setActiveEditJob] = useState<JobApplication | null>(null);
   const [jobToDelete, setJobToDelete] = useState<JobApplication | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -102,6 +108,26 @@ export const MyApplicationsPage: React.FC = () => {
         return 0;
       });
   }, [applications, searchQuery, selectedStatus, selectedJobType, sortBy]);
+
+  // Format date nicely e.g., "Nov 01, 2026"
+  const formatDisplayDate = (dateStr: string) => {
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          });
+        }
+      }
+      return dateStr;
+    } catch {
+      return dateStr;
+    }
+  };
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -188,7 +214,7 @@ export const MyApplicationsPage: React.FC = () => {
               <option value="company-desc">Company (Z-A)</option>
             </select>
 
-            {/* View Mode Switcher (Table vs Cards) */}
+            {/* View Mode Switcher (Table vs Cards vs Kanban) */}
             <div className="flex items-center p-0.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
               <button
                 type="button"
@@ -213,6 +239,14 @@ export const MyApplicationsPage: React.FC = () => {
                 title="Cards view"
               >
                 <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/kanban')}
+                className="p-1.5 rounded-md text-xs transition-colors cursor-pointer text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+                title="Switch to Kanban Board"
+              >
+                <Kanban className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -286,17 +320,17 @@ export const MyApplicationsPage: React.FC = () => {
       ) : viewMode === 'table' ? (
         /* TABLE VIEW */
         <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto scrollbar-thin">
+            <table className="w-full min-w-[880px] text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  <th className="py-3 px-5">Company</th>
-                  <th className="py-3 px-4">Role</th>
-                  <th className="py-3 px-4">Type</th>
-                  <th className="py-3 px-4">Date</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">Salary</th>
-                  <th className="py-3 px-5 text-right">Actions</th>
+                  <th className="py-3 px-5 w-[22%]">Company</th>
+                  <th className="py-3 px-4 w-[28%]">Role & Description</th>
+                  <th className="py-3 px-4 w-[11%]">Type</th>
+                  <th className="py-3 px-4 w-[13%] whitespace-nowrap">Applied Date</th>
+                  <th className="py-3 px-4 w-[12%]">Status</th>
+                  <th className="py-3 px-4 w-[14%] whitespace-nowrap">Salary</th>
+                  <th className="py-3 px-5 text-right w-[10%] whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
@@ -306,45 +340,60 @@ export const MyApplicationsPage: React.FC = () => {
                     className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors group"
                   >
                     {/* Company */}
-                    <td className="py-3.5 px-5">
+                    <td className="py-3.5 px-5 align-middle">
                       <div className="flex items-center gap-3">
                         <CompanyAvatar name={app.company} size="sm" />
-                        <div>
-                          <span className="font-semibold text-slate-900 dark:text-white block">
+                        <div className="min-w-0">
+                          <span
+                            onClick={() => setActiveViewJob(app)}
+                            className="font-semibold text-slate-900 dark:text-white block truncate hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer transition-colors"
+                          >
                             {app.company}
                           </span>
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-slate-400" />
-                            {app.location}
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 truncate">
+                            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span className="truncate">{app.location}</span>
                           </span>
                         </div>
                       </div>
                     </td>
 
-                    {/* Role */}
-                    <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-200">
+                    {/* Role & Notes Preview */}
+                    <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-200 align-middle">
                       <div>
-                        <span>{app.role}</span>
-                        {app.notes && (
-                          <span className="block text-[11px] text-slate-400 truncate max-w-xs">
-                            {app.notes}
-                          </span>
+                        <span
+                          onClick={() => setActiveViewJob(app)}
+                          className="font-semibold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer transition-colors block"
+                        >
+                          {app.role}
+                        </span>
+                        {app.notes ? (
+                          <p
+                            onClick={() => setActiveViewJob(app)}
+                            className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1 max-w-sm cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1.5"
+                            title="Click to read full description and notes"
+                          >
+                            <FileText className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span className="truncate">{app.notes}</span>
+                          </p>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 italic">No description notes</span>
                         )}
                       </div>
                     </td>
 
                     {/* Type */}
-                    <td className="py-3.5 px-4">
+                    <td className="py-3.5 px-4 align-middle">
                       <JobTypeBadge type={app.jobType} />
                     </td>
 
-                    {/* Date */}
-                    <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400 font-mono text-[11px]">
-                      {app.appliedDate}
+                    {/* Date (single-line) */}
+                    <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400 font-mono text-[11px] whitespace-nowrap align-middle">
+                      {formatDisplayDate(app.appliedDate)}
                     </td>
 
                     {/* Status (interactive quick update) */}
-                    <td className="py-3.5 px-4">
+                    <td className="py-3.5 px-4 align-middle">
                       <StatusBadge
                         status={app.status}
                         interactive={true}
@@ -354,20 +403,34 @@ export const MyApplicationsPage: React.FC = () => {
                       />
                     </td>
 
-                    {/* Salary */}
-                    <td className="py-3.5 px-4 font-mono text-[11px] text-slate-600 dark:text-slate-300">
-                      {app.salaryRange || '—'}
+                    {/* Salary (never wraps awkwardly) */}
+                    <td className="py-3.5 px-4 font-mono text-[11px] text-slate-700 dark:text-slate-300 whitespace-nowrap align-middle">
+                      {app.salaryRange ? (
+                        <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 whitespace-nowrap font-medium text-[11px]">
+                          {app.salaryRange}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
                     </td>
 
                     {/* Actions */}
-                    <td className="py-3.5 px-5 text-right">
-                      <div className="flex items-center justify-end gap-1.5 opacity-90 group-hover:opacity-100">
+                    <td className="py-3.5 px-5 text-right align-middle whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1 opacity-90 group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => setActiveViewJob(app)}
+                          className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
+                          title="View complete details and notes"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
                         {app.jobLink && (
                           <a
                             href={app.jobLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-md transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
                             title="Visit job posting"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
@@ -376,7 +439,7 @@ export const MyApplicationsPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setActiveEditJob(app)}
-                          className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-md transition-colors cursor-pointer"
+                          className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
                           title="Edit application"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
@@ -384,7 +447,7 @@ export const MyApplicationsPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setJobToDelete(app)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-md transition-colors cursor-pointer"
+                          className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-md transition-colors cursor-pointer"
                           title="Delete application"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -395,6 +458,10 @@ export const MyApplicationsPage: React.FC = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+          {/* Mobile swipe helper */}
+          <div className="sm:hidden px-4 py-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 text-[11px] text-slate-400 text-center">
+            Scroll horizontally to view all columns
           </div>
         </div>
       ) : (
@@ -408,13 +475,19 @@ export const MyApplicationsPage: React.FC = () => {
               <div>
                 {/* Card Top: Avatar, Company, Status */}
                 <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <CompanyAvatar name={app.company} size="md" />
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    <div className="min-w-0">
+                      <h3
+                        onClick={() => setActiveViewJob(app)}
+                        className="text-sm font-bold text-slate-900 dark:text-white truncate cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                      >
                         {app.company}
                       </h3>
-                      <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                      <p
+                        onClick={() => setActiveViewJob(app)}
+                        className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 truncate cursor-pointer hover:underline"
+                      >
                         {app.role}
                       </p>
                     </div>
@@ -437,12 +510,14 @@ export const MyApplicationsPage: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="font-mono text-[11px]">Applied {app.appliedDate}</span>
+                    <span className="font-mono text-[11px] whitespace-nowrap">
+                      Applied {formatDisplayDate(app.appliedDate)}
+                    </span>
                   </div>
                   {app.salaryRange && (
                     <div className="flex items-center gap-2">
                       <DollarSign className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="font-mono text-[11px] text-slate-700 dark:text-slate-300">
+                      <span className="font-mono text-[11px] text-slate-700 dark:text-slate-300 whitespace-nowrap">
                         {app.salaryRange}
                       </span>
                     </div>
@@ -457,22 +532,39 @@ export const MyApplicationsPage: React.FC = () => {
 
                 {/* Notes if any */}
                 {app.notes && (
-                  <p className="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800/80 mb-4 line-clamp-3 text-left">
-                    {app.notes}
-                  </p>
+                  <div className="mb-4">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800/80 line-clamp-3 text-left leading-relaxed">
+                      {app.notes}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setActiveViewJob(app)}
+                      className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline mt-1 font-medium inline-block cursor-pointer"
+                    >
+                      Read full description & notes →
+                    </button>
+                  </div>
                 )}
               </div>
 
               {/* Card Footer: JobType + Action buttons */}
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <JobTypeBadge type={app.jobType} />
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setActiveViewJob(app)}
+                    className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
+                    title="View details"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </button>
                   {app.jobLink && (
                     <a
                       href={app.jobLink}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-md transition-colors"
+                      className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
                       title="Visit job post"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
@@ -481,7 +573,7 @@ export const MyApplicationsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setActiveEditJob(app)}
-                    className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-md transition-colors cursor-pointer"
+                    className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
                     title="Edit"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
@@ -489,7 +581,7 @@ export const MyApplicationsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setJobToDelete(app)}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-md transition-colors cursor-pointer"
+                    className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-md transition-colors cursor-pointer"
                     title="Delete"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -499,6 +591,29 @@ export const MyApplicationsPage: React.FC = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Details View Modal */}
+      {activeViewJob && (
+        <ApplicationDetailsModal
+          isOpen={Boolean(activeViewJob)}
+          application={activeViewJob}
+          onClose={() => setActiveViewJob(null)}
+          onEdit={(app) => {
+            setActiveViewJob(null);
+            setActiveEditJob(app);
+          }}
+          onDelete={(app) => {
+            setActiveViewJob(null);
+            setJobToDelete(app);
+          }}
+          onStatusChange={(newStatus) => {
+            if (activeViewJob) {
+              updateApplication(activeViewJob.id, { status: newStatus });
+              setActiveViewJob({ ...activeViewJob, status: newStatus });
+            }
+          }}
+        />
       )}
 
       {/* Edit Modal */}

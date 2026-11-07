@@ -23,6 +23,7 @@ import {
   Layers,
   User,
   AlertCircle,
+  Kanban,
 } from 'lucide-react';
 import { useJobContext } from '../context/JobContext';
 import { ApplicationModal } from '../components/ApplicationModal';
@@ -83,6 +84,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = () => {
   const navLinks = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard, exact: true },
     { to: '/applications', label: 'My Applications', icon: Briefcase, count: applications.length },
+    { to: '/kanban', label: 'Kanban Board', icon: Kanban },
     { to: '/add', label: 'Add New Application', icon: PlusCircle },
     { to: '/companies', label: 'Companies', icon: Building2 },
     { to: '/analytics', label: 'Analytics', icon: BarChart3 },
@@ -96,6 +98,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = () => {
         return 'Dashboard Overview';
       case '/applications':
         return 'My Applications';
+      case '/kanban':
+        return 'Kanban Workflow Board';
       case '/add':
         return 'Add New Application';
       case '/companies':
@@ -111,7 +115,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = () => {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (location.pathname !== '/applications') {
+    if (location.pathname !== '/applications' && location.pathname !== '/kanban') {
       navigate('/applications');
     }
   };

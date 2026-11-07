@@ -16,6 +16,8 @@ import {
   Sparkles,
   Building2,
   TrendingUp,
+  Eye,
+  Kanban,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -34,6 +36,7 @@ import { CompanyAvatar } from '../components/CompanyAvatar';
 import { EmptyState } from '../components/EmptyState';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 import { ApplicationModal } from '../components/ApplicationModal';
+import { ApplicationDetailsModal } from '../components/ApplicationDetailsModal';
 
 export const DashboardPage: React.FC = () => {
   const {
@@ -48,6 +51,7 @@ export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [activeEditJob, setActiveEditJob] = useState<JobApplication | null>(null);
+  const [activeViewJob, setActiveViewJob] = useState<JobApplication | null>(null);
   const [jobToDelete, setJobToDelete] = useState<JobApplication | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
@@ -119,11 +123,19 @@ export const DashboardPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+          <button
+            type="button"
+            onClick={() => navigate('/kanban')}
+            className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg shadow-2xs transition-colors cursor-pointer"
+          >
+            <Kanban className="w-3.5 h-3.5 text-indigo-500" />
+            <span>Kanban Board</span>
+          </button>
           <button
             type="button"
             onClick={() => setIsAddModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm shadow-indigo-600/20 transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm shadow-indigo-600/20 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>New Application</span>
@@ -131,7 +143,7 @@ export const DashboardPage: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/applications')}
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/80 rounded-lg shadow-2xs transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/80 rounded-lg shadow-2xs transition-colors cursor-pointer"
           >
             <span>View All</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -144,7 +156,7 @@ export const DashboardPage: React.FC = () => {
         {/* Total Applications */}
         <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-xs transition-shadow">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Applied</span>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Applications</span>
             <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
               <Briefcase className="w-4 h-4" />
             </div>
@@ -449,9 +461,14 @@ export const DashboardPage: React.FC = () => {
                     {/* Role */}
                     <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-200">
                       <div>
-                        <span>{app.role}</span>
+                        <span
+                          onClick={() => setActiveViewJob(app)}
+                          className="hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer transition-colors"
+                        >
+                          {app.role}
+                        </span>
                         {app.salaryRange && (
-                          <span className="block text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                          <span className="block text-[11px] font-mono text-slate-500 dark:text-slate-400 whitespace-nowrap">
                             {app.salaryRange}
                           </span>
                         )}
@@ -459,7 +476,7 @@ export const DashboardPage: React.FC = () => {
                     </td>
 
                     {/* Date */}
-                    <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+                    <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400 font-mono text-[11px] whitespace-nowrap">
                       {app.appliedDate}
                     </td>
 
@@ -481,13 +498,21 @@ export const DashboardPage: React.FC = () => {
 
                     {/* Actions */}
                     <td className="py-3.5 px-5 text-right">
-                      <div className="flex items-center justify-end gap-1.5 opacity-90 group-hover:opacity-100">
+                      <div className="flex items-center justify-end gap-1 opacity-90 group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => setActiveViewJob(app)}
+                          className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
+                          title="View complete details and notes"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
                         {app.jobLink && (
                           <a
                             href={app.jobLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-md transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
                             title="Visit job posting"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
@@ -496,7 +521,7 @@ export const DashboardPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setActiveEditJob(app)}
-                          className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-md transition-colors cursor-pointer"
+                          className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
                           title="Edit application"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
@@ -504,7 +529,7 @@ export const DashboardPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setJobToDelete(app)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-md transition-colors cursor-pointer"
+                          className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-md transition-colors cursor-pointer"
                           title="Delete application"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -518,6 +543,29 @@ export const DashboardPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Details View Modal */}
+      {activeViewJob && (
+        <ApplicationDetailsModal
+          isOpen={Boolean(activeViewJob)}
+          application={activeViewJob}
+          onClose={() => setActiveViewJob(null)}
+          onEdit={(app) => {
+            setActiveViewJob(null);
+            setActiveEditJob(app);
+          }}
+          onDelete={(app) => {
+            setActiveViewJob(null);
+            setJobToDelete(app);
+          }}
+          onStatusChange={(newStatus) => {
+            if (activeViewJob) {
+              updateApplication(activeViewJob.id, { status: newStatus });
+              setActiveViewJob({ ...activeViewJob, status: newStatus });
+            }
+          }}
+        />
+      )}
 
       {/* Edit Modal */}
       {activeEditJob && (

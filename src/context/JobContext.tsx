@@ -171,44 +171,47 @@ export const JobProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       const cleanId = String(id).trim();
-      let targetApp: JobApplication | undefined;
 
-      // Filter and sync LocalStorage immediately
-      setApplications((prev) => {
-        targetApp = prev.find((app) => String(app.id).trim() === cleanId);
-        if (!targetApp) {
-          console.warn(`Application with ID "${cleanId}" was not found.`);
-          return prev;
-        }
+      // Look up target application from state
+      let targetApp = applications.find((app) => String(app.id).trim() === cleanId);
 
-        const remaining = prev.filter((app) => String(app.id).trim() !== cleanId);
-        // Requirement 5: Update LocalStorage immediately after deletion
-        saveStoredApplications(remaining);
-        return remaining;
-      });
+      // If not in state, check stored data fallback
+      if (!targetApp) {
+        const stored = getStoredApplications();
+        targetApp = stored.find((app) => String(app.id).trim() === cleanId);
+      }
 
-      if (targetApp) {
-        // Requirement 9: Show a success message after successful deletion
-        showToast(
-          `Application for "${targetApp.role}" at ${targetApp.company} was deleted successfully.`,
-          'success'
-        );
-
-        // Add a notification entry for record
-        const notif: NotificationItem = {
-          id: `notif-${Date.now()}`,
-          title: 'Application Removed',
-          message: `Deleted application for ${targetApp.role} at ${targetApp.company}.`,
-          date: new Date().toISOString().slice(0, 10),
-          type: 'alert',
-          read: false,
-        };
-        setNotifications((n) => [notif, ...n]);
-        return true;
-      } else {
+      if (!targetApp) {
         showToast('Application not found or already removed.', 'error');
         return false;
       }
+
+      // Filter out the selected application
+      const remaining = applications.filter((app) => String(app.id).trim() !== cleanId);
+
+      // 1. Immediately persist to LocalStorage to ensure persistence across page refreshes
+      saveStoredApplications(remaining);
+
+      // 2. Update React state immediately
+      setApplications(remaining);
+
+      // 3. Show clear success message
+      showToast(
+        `Application for "${targetApp.role}" at ${targetApp.company} was deleted successfully.`,
+        'success'
+      );
+
+      // 4. Add notification record
+      const notif: NotificationItem = {
+        id: `notif-${Date.now()}`,
+        title: 'Application Removed',
+        message: `Deleted application for ${targetApp.role} at ${targetApp.company}.`,
+        date: new Date().toISOString().slice(0, 10),
+        type: 'alert',
+        read: false,
+      };
+      setNotifications((n) => [notif, ...n]);
+      return true;
     } catch (err: any) {
       console.error('Error in deleteApplication:', err);
       showToast('An error occurred while deleting the application.', 'error');

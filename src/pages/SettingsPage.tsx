@@ -68,7 +68,7 @@ export const SettingsPage: React.FC = () => {
     setProfileError(null);
     updateProfile({
       name: profileForm.name.trim(),
-      email: profileForm.email.trim() || 'amitkumar678793@gmail.com',
+      email: profileForm.email.trim() || 'sharmashubham23@gmail.com',
       targetRole: profileForm.targetRole.trim() || 'Software Engineer',
       location: profileForm.location.trim(),
     });
@@ -138,14 +138,14 @@ export const SettingsPage: React.FC = () => {
         {/* Live Profile Header Preview */}
         <div className="flex items-center gap-3 p-3.5 mb-5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60">
           <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-500 text-white font-bold text-base flex items-center justify-center shadow-xs shrink-0">
-            {(profileForm.name || 'A').charAt(0).toUpperCase()}
+            {(profileForm.name || 'S').charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
             <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
-              {profileForm.name || 'Your Name'}
+              {profileForm.name || 'Shubham Sharma'}
             </h4>
             <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-              {profileForm.targetRole || 'Software Engineer'} · {profileForm.email || 'Email'}
+              {profileForm.targetRole || 'Software Engineer'} · {profileForm.email || 'sharmashubham23@gmail.com'}
             </p>
           </div>
         </div>
@@ -174,7 +174,7 @@ export const SettingsPage: React.FC = () => {
                 <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="e.g. Amit Kumar"
+                  placeholder="e.g. Shubham Sharma"
                   value={profileForm.name}
                   onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
                   className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-900 dark:text-white"

@@ -213,16 +213,44 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Job Location */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Location <span className="text-rose-500">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Location <span className="text-rose-500">*</span>
+                </label>
+                <div className="flex items-center gap-1">
+                  {[
+                    { label: 'Remote', val: 'Remote' },
+                    { label: 'Hybrid', val: 'Hybrid' },
+                    { label: 'On-site', val: 'On-site' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => {
+                          if (!prev.location.trim()) return { ...prev, location: preset.val };
+                          if (prev.location.toLowerCase().includes(preset.val.toLowerCase())) return prev;
+                          return { ...prev, location: `${prev.location} (${preset.val})` };
+                        });
+                        setErrors((e) => ({ ...e, location: undefined }));
+                      }}
+                      className="px-1.5 py-0.5 text-[10px] rounded bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-700 cursor-pointer"
+                    >
+                      +{preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="relative">
                 <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="e.g. Remote, San Francisco, CA"
                   value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, location: e.target.value });
+                    if (errors.location) setErrors({ ...errors, location: undefined });
+                  }}
                   className={`w-full pl-9 pr-3 py-2 text-sm bg-slate-50 dark:bg-slate-800/60 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-900 dark:text-white placeholder-slate-400 ${
                     errors.location ? 'border-rose-400 dark:border-rose-700' : 'border-slate-200 dark:border-slate-700'
                   }`}
