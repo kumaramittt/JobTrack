@@ -1,0 +1,8 @@
+{
+  "name": "Remix JobTrack – Job Application Tracker",
+  "description": "Premium job application management dashboard to track, organize, and analyze applications with ease.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
