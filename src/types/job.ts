@@ -30,6 +30,23 @@ export interface UserProfile {
   targetRole: string;
   location?: string;
   avatarUrl?: string;
+  timezone?: string;
+  isDemoAccount?: boolean;
+}
+
+export interface ApplicationMetrics {
+  total: number;
+  applied: number;
+  interviewStage: number;
+  selected: number;
+  rejected: number;
+  interviewInvitations: number;
+  scheduledRounds: number;
+  interviewRate: number;
+  interviewToOfferRate: number;
+  offerRate: number;
+  activePipelines: number;
+  avgDaysToInterview: number | null;
 }
 
 export interface NotificationItem {

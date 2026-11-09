@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { JobApplication, UserProfile, NotificationItem, ThemeMode } from '../types/job';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import { JobApplication, UserProfile, NotificationItem, ThemeMode, ApplicationMetrics } from '../types/job';
 import {
   getStoredApplications,
   saveStoredApplications,
@@ -9,9 +9,13 @@ import {
   saveStoredTheme,
   getStoredNotifications,
   saveStoredNotifications,
+  getStoredIsDemo,
+  saveStoredIsDemo,
   INITIAL_DEMO_APPLICATIONS,
   INITIAL_NOTIFICATIONS,
 } from '../utils/storage';
+import { calculateApplicationMetrics } from '../utils/metrics';
+import { getTodayDateString } from '../utils/date';
 
 export interface ToastNotification {
   id: string;
@@ -25,6 +29,8 @@ interface JobContextType {
   theme: ThemeMode;
   notifications: NotificationItem[];
   searchQuery: string;
+  isDemoData: boolean;
+  metrics: ApplicationMetrics;
   toast: ToastNotification | null;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   hideToast: () => void;
@@ -37,6 +43,7 @@ interface JobContextType {
   toggleTheme: () => void;
   resetDemoData: () => void;
   clearAllData: () => void;
+  checkDuplicate: (company: string, role: string, excludeId?: string) => boolean;
   importApplications: (newApps: JobApplication[]) => void;
   markNotificationAsRead: (id: string) => void;
   markAllNotificationsAsRead: () => void;
@@ -50,8 +57,12 @@ export const JobProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [profile, setProfile] = useState<UserProfile>(getStoredProfile);
   const [theme, setThemeState] = useState<ThemeMode>(getStoredTheme);
   const [notifications, setNotifications] = useState<NotificationItem[]>(getStoredNotifications);
+  const [isDemoData, setIsDemoData] = useState<boolean>(getStoredIsDemo);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [toast, setToast] = useState<ToastNotification | null>(null);
+
+  // Compute centralized metrics dynamically from current applications state
+  const metrics = useMemo(() => calculateApplicationMetrics(applications), [applications]);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = `toast-${Date.now()}`;
@@ -99,6 +110,18 @@ export const JobProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setThemeState((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
+  const checkDuplicate = (company: string, role: string, excludeId?: string): boolean => {
+    const c = company.trim().toLowerCase();
+    const r = role.trim().toLowerCase();
+    if (!c || !r) return false;
+    return applications.some(
+      (app) =>
+        app.id !== excludeId &&
+        app.company.trim().toLowerCase() === c &&
+        app.role.trim().toLowerCase() === r
+    );
+  };
+
   const addApplication = (jobData: Omit<JobApplication, 'id' | 'createdAt' | 'updatedAt'>): JobApplication => {
     const now = new Date().toISOString();
     const newJob: JobApplication = {
@@ -110,12 +133,18 @@ export const JobProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     setApplications((prev) => [newJob, ...prev]);
 
-    // Create a notification for the newly added job
+    // If previously in demo mode, transition to real user data
+    if (isDemoData) {
+      setIsDemoData(false);
+      saveStoredIsDemo(false);
+    }
+
+    // Create a notification for the newly added job using IST date
     const newNotif: NotificationItem = {
       id: `notif-${Date.now()}`,
       title: 'Application Added',
       message: `Tracked application for ${newJob.role} at ${newJob.company}.`,
-      date: new Date().toISOString().slice(0, 10),
+      date: getTodayDateString(),
       type: newJob.status === 'Interview' ? 'interview' : 'info',
       read: false,
       jobId: newJob.id,
@@ -226,15 +255,19 @@ export const JobProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const resetDemoData = () => {
     setApplications(INITIAL_DEMO_APPLICATIONS);
     setNotifications(INITIAL_NOTIFICATIONS);
+    setIsDemoData(true);
     saveStoredApplications(INITIAL_DEMO_APPLICATIONS);
     saveStoredNotifications(INITIAL_NOTIFICATIONS);
-    showToast('Demo applications restored successfully.', 'info');
+    saveStoredIsDemo(true);
+    showToast('Sample demo applications loaded successfully.', 'info');
   };
 
   const clearAllData = () => {
     setApplications([]);
+    setIsDemoData(false);
     saveStoredApplications([]);
-    showToast('All application data cleared.', 'info');
+    saveStoredIsDemo(false);
+    showToast('All application data cleared. Ready for your own applications.', 'info');
   };
 
   const importApplications = (newApps: JobApplication[]) => {
@@ -243,11 +276,13 @@ export const JobProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       saveStoredApplications(merged);
       return merged;
     });
+    setIsDemoData(false);
+    saveStoredIsDemo(false);
     const notif: NotificationItem = {
       id: `notif-${Date.now()}`,
       title: 'Import Successful',
       message: `Imported ${newApps.length} job application(s) successfully.`,
-      date: new Date().toISOString().slice(0, 10),
+      date: getTodayDateString(),
       type: 'info',
       read: false,
     };
@@ -275,6 +310,8 @@ export const JobProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         theme,
         notifications,
         searchQuery,
+        isDemoData,
+        metrics,
         toast,
         showToast,
         hideToast,
@@ -287,6 +324,7 @@ export const JobProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         toggleTheme,
         resetDemoData,
         clearAllData,
+        checkDuplicate,
         importApplications,
         markNotificationAsRead,
         markAllNotificationsAsRead,

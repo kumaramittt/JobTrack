@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useJobContext } from '../context/JobContext';
 import { JobStatus, JobType } from '../types/job';
+import { getTodayDateString } from '../utils/date';
 
 const statusOptions: { value: JobStatus; label: string; desc: string }[] = [
   { value: 'Applied', label: 'Applied', desc: 'Application submitted, pending response' },
@@ -29,7 +30,7 @@ const statusOptions: { value: JobStatus; label: string; desc: string }[] = [
 const jobTypeOptions: JobType[] = ['Full-time', 'Internship', 'Remote', 'Part-time', 'Contract'];
 
 export const AddApplicationPage: React.FC = () => {
-  const { addApplication } = useJobContext();
+  const { addApplication, checkDuplicate } = useJobContext();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -37,7 +38,7 @@ export const AddApplicationPage: React.FC = () => {
     role: '',
     location: '',
     jobType: 'Full-time' as JobType,
-    appliedDate: new Date().toISOString().slice(0, 10),
+    appliedDate: getTodayDateString(),
     status: 'Applied' as JobStatus,
     jobLink: '',
     salaryRange: '',
@@ -60,12 +61,18 @@ export const AddApplicationPage: React.FC = () => {
 
   const validate = () => {
     const newErrors: typeof errors = {};
-    if (!formData.company.trim()) {
+    const companyClean = formData.company.trim();
+    const roleClean = formData.role.trim();
+
+    if (!companyClean) {
       newErrors.company = 'Company name is required.';
     }
-    if (!formData.role.trim()) {
+    if (!roleClean) {
       newErrors.role = 'Job title / role is required.';
+    } else if (companyClean && checkDuplicate(companyClean, roleClean)) {
+      newErrors.role = `An application for "${roleClean}" at ${companyClean} already exists.`;
     }
+
     if (!formData.location.trim()) {
       newErrors.location = 'Location is required. Choose Remote, Hybrid, or enter an office location.';
     }
@@ -110,7 +117,7 @@ export const AddApplicationPage: React.FC = () => {
       role: '',
       location: '',
       jobType: 'Full-time',
-      appliedDate: new Date().toISOString().slice(0, 10),
+      appliedDate: getTodayDateString(),
       status: 'Applied',
       jobLink: '',
       salaryRange: '',

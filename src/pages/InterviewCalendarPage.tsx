@@ -28,6 +28,14 @@ import { JobApplication, JobStatus } from '../types/job';
 import { CompanyAvatar } from '../components/CompanyAvatar';
 import { ApplicationDetailsModal } from '../components/ApplicationDetailsModal';
 import { InterviewScheduleModal } from '../components/InterviewScheduleModal';
+import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
+import {
+  getTodayDate,
+  getTodayDateString,
+  getInterviewCountdownInfo,
+  formatDisplayDate,
+  formatDateKey,
+} from '../utils/date';
 
 type CalendarViewMode = 'month' | 'week' | 'day';
 
@@ -38,9 +46,10 @@ export const InterviewCalendarPage: React.FC = () => {
   // Active view mode
   const [viewMode, setViewMode] = useState<CalendarViewMode>('month');
 
-  // Currently focused date (defaults to current date: Nov 7, 2026)
-  const [currentDate, setCurrentDate] = useState<Date>(() => new Date(2026, 10, 7)); // 2026-11-07
-  const today = useMemo(() => new Date(2026, 10, 7), []);
+  // Currently focused date (dynamic today in Asia/Kolkata default timezone)
+  const [currentDate, setCurrentDate] = useState<Date>(() => getTodayDate());
+  const today = useMemo(() => getTodayDate(), []);
+  const todayKey = useMemo(() => getTodayDateString(), []);
 
   // Search and format filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,16 +60,7 @@ export const InterviewCalendarPage: React.FC = () => {
   const [scheduleModalApp, setScheduleModalApp] = useState<JobApplication | null>(null);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [clickedDateForSchedule, setClickedDateForSchedule] = useState<string | undefined>(undefined);
-
-  // Helper: Format date strings consistently YYYY-MM-DD
-  const formatDateKey = (d: Date): string => {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const todayKey = formatDateKey(today);
+  const [jobToDelete, setJobToDelete] = useState<JobApplication | null>(null);
 
   // All applications that have an interview date
   const interviewApplications = useMemo(() => {
@@ -115,21 +115,11 @@ export const InterviewCalendarPage: React.FC = () => {
     return upcomingInterviews.find((app) => (app.interviewDate || '') >= todayKey) || upcomingInterviews[0];
   }, [upcomingInterviews, todayKey]);
 
-  // Countdown calculations
+  // Accurate countdown calculations using centralized date & timezone logic
   const countdownText = useMemo(() => {
     if (!nextInterview || !nextInterview.interviewDate) return null;
-    const target = new Date(nextInterview.interviewDate);
-    target.setHours(0, 0, 0, 0);
-    const curr = new Date(today);
-    curr.setHours(0, 0, 0, 0);
-    const diffTime = target.getTime() - curr.getTime();
-    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return { label: 'Today!', badge: 'bg-rose-500 text-white', days: 0 };
-    if (diffDays === 1) return { label: 'Tomorrow', badge: 'bg-amber-500 text-white', days: 1 };
-    if (diffDays > 1) return { label: `In ${diffDays} days`, badge: 'bg-indigo-600 text-white', days: diffDays };
-    return { label: 'Past due', badge: 'bg-slate-500 text-white', days: diffDays };
-  }, [nextInterview, today]);
+    return getInterviewCountdownInfo(nextInterview.interviewDate, nextInterview.interviewTime);
+  }, [nextInterview]);
 
   // Navigation handlers
   const handlePrev = () => {
@@ -301,7 +291,7 @@ export const InterviewCalendarPage: React.FC = () => {
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-200">
                   Upcoming Milestone
                 </span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${countdownText.badge}`}>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${countdownText.badgeClass}`}>
                   {countdownText.label}
                 </span>
                 <span className="text-[11px] text-indigo-300 font-mono">
@@ -874,8 +864,8 @@ export const InterviewCalendarPage: React.FC = () => {
             setIsScheduleModalOpen(true);
           }}
           onDelete={(app) => {
-            deleteApplication(app.id);
             setSelectedAppForDetails(null);
+            setJobToDelete(app);
           }}
           onStatusChange={(newStatus) => {
             if (selectedAppForDetails) {
@@ -902,6 +892,19 @@ export const InterviewCalendarPage: React.FC = () => {
           onRemove={handleRemoveInterviewSchedule}
         />
       )}
+
+      {/* Confirmation Modal before permanent deletion */}
+      <DeleteConfirmModal
+        isOpen={Boolean(jobToDelete)}
+        application={jobToDelete}
+        onClose={() => setJobToDelete(null)}
+        onConfirm={() => {
+          if (jobToDelete) {
+            deleteApplication(jobToDelete.id);
+            setJobToDelete(null);
+          }
+        }}
+      />
     </div>
   );
 };

@@ -37,10 +37,14 @@ import { EmptyState } from '../components/EmptyState';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 import { ApplicationModal } from '../components/ApplicationModal';
 import { ApplicationDetailsModal } from '../components/ApplicationDetailsModal';
+import { getTodayDateString, getInterviewCountdownInfo, formatDisplayDate } from '../utils/date';
 
 export const DashboardPage: React.FC = () => {
   const {
     applications,
+    metrics,
+    isDemoData,
+    clearAllData,
     updateApplication,
     deleteApplication,
     addApplication,
@@ -55,17 +59,19 @@ export const DashboardPage: React.FC = () => {
   const [jobToDelete, setJobToDelete] = useState<JobApplication | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // Computed metrics
-  const totalCount = applications.length;
-  const appliedCount = applications.filter((a) => a.status === 'Applied').length;
-  const interviewCount = applications.filter((a) => a.status === 'Interview').length;
-  const selectedCount = applications.filter((a) => a.status === 'Selected').length;
-  const rejectedCount = applications.filter((a) => a.status === 'Rejected').length;
+  const todayKey = getTodayDateString();
 
-  // Next upcoming interview if any
-  const upcomingInterview = applications.find(
-    (a) => a.status === 'Interview' && a.interviewDate
-  );
+  // Next upcoming interview chronologically on or after today
+  const upcomingInterview = React.useMemo(() => {
+    const scheduled = applications
+      .filter((a) => Boolean(a.interviewDate))
+      .sort((a, b) => (a.interviewDate || '').localeCompare(b.interviewDate || ''));
+    return scheduled.find((a) => (a.interviewDate || '') >= todayKey) || scheduled[0];
+  }, [applications, todayKey]);
+
+  const upcomingCountdown = upcomingInterview?.interviewDate
+    ? getInterviewCountdownInfo(upcomingInterview.interviewDate, upcomingInterview.interviewTime)
+    : null;
 
   // Prepare monthly activity chart data from real applications
   const chartData = React.useMemo(() => {
@@ -151,7 +157,28 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. SUMMARY CARDS */}
+      {/* Demo Mode Notice */}
+      {isDemoData && (
+        <div className="p-3.5 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs animate-in fade-in">
+          <div className="flex items-center gap-2.5 text-indigo-900 dark:text-indigo-200">
+            <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+            <span>
+              <strong>Sample Demo Mode Active:</strong> You are currently viewing pre-populated demo records. You can explore or start fresh with an empty dashboard anytime.
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={clearAllData}
+              className="px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 rounded-lg hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+            >
+              Clear Demo & Start Fresh
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 3. SUMMARY CARDS (Dynamic from unified metrics) */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
         {/* Total Applications */}
         <div className="p-4 sm:p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs hover:shadow-xs transition-shadow">
@@ -162,7 +189,7 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-bold font-mono text-slate-900 dark:text-white">
-            {totalCount}
+            {metrics.total}
           </div>
           <div className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
             All tracked opportunities
@@ -178,10 +205,10 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-bold font-mono text-blue-600 dark:text-blue-400">
-            {appliedCount}
+            {metrics.applied}
           </div>
           <div className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
-            {totalCount > 0 ? `${Math.round((appliedCount / totalCount) * 100)}% of total` : '0%'}
+            {metrics.total > 0 ? `${Math.round((metrics.applied / metrics.total) * 100)}% of total` : '0%'}
           </div>
         </div>
 
@@ -194,7 +221,7 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-bold font-mono text-amber-600 dark:text-amber-400">
-            {interviewCount}
+            {metrics.interviewStage}
           </div>
           <div className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
             Active interview rounds
@@ -210,7 +237,7 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
-            {selectedCount}
+            {metrics.selected}
           </div>
           <div className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
             Selected / Job offers
@@ -226,7 +253,7 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-bold font-mono text-rose-600 dark:text-rose-400">
-            {rejectedCount}
+            {metrics.rejected}
           </div>
           <div className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
             Archive & feedback noted
@@ -353,9 +380,18 @@ export const DashboardPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="mt-3 flex items-center gap-2 text-xs text-amber-800 dark:text-amber-300 font-medium">
-                  <Calendar className="w-3.5 h-3.5 shrink-0" />
-                  <span>Interview Date: {upcomingInterview.interviewDate}</span>
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-xs text-amber-800 dark:text-amber-300 font-medium truncate">
+                    <Calendar className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">
+                      Interview: {upcomingCountdown?.formattedDate || formatDisplayDate(upcomingInterview.interviewDate || '')}
+                    </span>
+                  </div>
+                  {upcomingCountdown && (
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0 ${upcomingCountdown.badgeClass}`}>
+                      {upcomingCountdown.label}
+                    </span>
+                  )}
                 </div>
 
                 {upcomingInterview.notes && (

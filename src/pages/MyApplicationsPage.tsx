@@ -28,6 +28,7 @@ import { EmptyState } from '../components/EmptyState';
 import { ApplicationModal } from '../components/ApplicationModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 import { ApplicationDetailsModal } from '../components/ApplicationDetailsModal';
+import { formatDisplayDate } from '../utils/date';
 
 type SortOption = 'date-desc' | 'date-asc' | 'company-asc' | 'company-desc';
 
@@ -108,26 +109,6 @@ export const MyApplicationsPage: React.FC = () => {
         return 0;
       });
   }, [applications, searchQuery, selectedStatus, selectedJobType, sortBy]);
-
-  // Format date nicely e.g., "Nov 01, 2026"
-  const formatDisplayDate = (dateStr: string) => {
-    try {
-      const parts = dateStr.split('-');
-      if (parts.length === 3) {
-        const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        if (!isNaN(d.getTime())) {
-          return d.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-          });
-        }
-      }
-      return dateStr;
-    } catch {
-      return dateStr;
-    }
-  };
 
   const clearFilters = () => {
     setSearchQuery('');

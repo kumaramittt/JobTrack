@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { JobApplication, JobStatus, JobType } from '../types/job';
 import { X, Building2, Briefcase, MapPin, Calendar, Link as LinkIcon, DollarSign, FileText, UserCheck, Mail, Trash2 } from 'lucide-react';
+import { useJobContext } from '../context/JobContext';
+import { getTodayDateString } from '../utils/date';
 
 interface ApplicationModalProps {
   isOpen: boolean;
@@ -33,13 +35,14 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
   onDelete,
 }) => {
   const isEditing = Boolean(application);
+  const { checkDuplicate } = useJobContext();
 
   const [formData, setFormData] = useState({
     company: '',
     role: '',
     location: '',
     jobType: 'Full-time' as JobType,
-    appliedDate: new Date().toISOString().slice(0, 10),
+    appliedDate: getTodayDateString(),
     status: 'Applied' as JobStatus,
     jobLink: '',
     salaryRange: '',
@@ -63,7 +66,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
         role: application.role || '',
         location: application.location || '',
         jobType: application.jobType || 'Full-time',
-        appliedDate: application.appliedDate || new Date().toISOString().slice(0, 10),
+        appliedDate: application.appliedDate || getTodayDateString(),
         status: application.status || 'Applied',
         jobLink: application.jobLink || '',
         salaryRange: application.salaryRange || '',
@@ -79,7 +82,7 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
         role: '',
         location: '',
         jobType: 'Full-time',
-        appliedDate: new Date().toISOString().slice(0, 10),
+        appliedDate: getTodayDateString(),
         status: 'Applied',
         jobLink: '',
         salaryRange: '',
@@ -96,12 +99,18 @@ export const ApplicationModal: React.FC<ApplicationModalProps> = ({
 
   const validate = () => {
     const newErrors: typeof errors = {};
-    if (!formData.company.trim()) {
+    const comp = formData.company.trim();
+    const role = formData.role.trim();
+
+    if (!comp) {
       newErrors.company = 'Company name is required.';
     }
-    if (!formData.role.trim()) {
+    if (!role) {
       newErrors.role = 'Job title/role is required.';
+    } else if (comp && checkDuplicate(comp, role, application?.id)) {
+      newErrors.role = `An application for "${role}" at ${comp} already exists.`;
     }
+
     if (!formData.location.trim()) {
       newErrors.location = 'Location is required (e.g., Remote or City).';
     }

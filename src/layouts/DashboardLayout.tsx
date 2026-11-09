@@ -47,6 +47,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = () => {
     addApplication,
     toast,
     hideToast,
+    isDemoData,
   } = useJobContext();
 
   const location = useLocation();
@@ -258,9 +259,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = () => {
                 {profile.name.charAt(0)}
               </div>
               <div className="truncate">
-                <p className="text-xs font-semibold text-slate-200 truncate group-hover:text-indigo-300 transition-colors">
-                  {profile.name}
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-semibold text-slate-200 truncate group-hover:text-indigo-300 transition-colors">
+                    {profile.name}
+                  </p>
+                  {isDemoData && (
+                    <span className="px-1.5 py-0.2 text-[9px] font-semibold bg-amber-500/20 text-amber-300 rounded border border-amber-500/30">
+                      Demo
+                    </span>
+                  )}
+                </div>
                 <p className="text-[11px] text-slate-400 truncate -mt-0.5">{profile.targetRole}</p>
               </div>
             </div>
@@ -454,9 +462,20 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = () => {
               {profileDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-56 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl z-40 py-2 animate-in fade-in zoom-in-95 duration-100">
                   <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                      {profile.name}
-                    </p>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        {profile.name}
+                      </p>
+                      {isDemoData ? (
+                        <span className="px-1.5 py-0.2 text-[9px] font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 rounded border border-amber-200 dark:border-amber-800">
+                          Demo Account
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.2 text-[9px] font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 rounded border border-emerald-200 dark:border-emerald-800">
+                          Personal
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                       {profile.email}
                     </p>

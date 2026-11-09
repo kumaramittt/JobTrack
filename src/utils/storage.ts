@@ -6,6 +6,7 @@ const STORAGE_KEYS = {
   THEME: 'jobtrack_theme_v1',
   NOTIFICATIONS: 'jobtrack_notifications_v1',
   INITIALIZED: 'jobtrack_initialized_v1',
+  IS_DEMO: 'jobtrack_is_demo_v1',
 };
 
 export const INITIAL_DEMO_APPLICATIONS: JobApplication[] = [
@@ -97,10 +98,12 @@ export const INITIAL_DEMO_APPLICATIONS: JobApplication[] = [
 ];
 
 export const DEFAULT_USER_PROFILE: UserProfile = {
-  name: 'Shubham Sharma',
-  email: 'sharmashubham23@gmail.com',
+  name: 'Ankit Sharma',
+  email: 'ankitsharma@gmail.com',
   targetRole: 'Full Stack / Frontend Developer',
   location: 'Bangalore, India',
+  timezone: 'Asia/Kolkata',
+  isDemoAccount: false,
 };
 
 export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
@@ -133,15 +136,32 @@ export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   },
 ];
 
+export function getStoredIsDemo(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEYS.IS_DEMO) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function saveStoredIsDemo(isDemo: boolean): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.IS_DEMO, String(isDemo));
+  } catch (err) {
+    console.error('Error saving isDemo state', err);
+  }
+}
+
 export function getStoredApplications(): JobApplication[] {
   try {
     const initialized = localStorage.getItem(STORAGE_KEYS.INITIALIZED);
     const data = localStorage.getItem(STORAGE_KEYS.APPLICATIONS);
 
-    // Only seed initial demo data on the very first launch when neither key exists
+    // Initial first-run seed
     if (!initialized && data === null) {
       localStorage.setItem(STORAGE_KEYS.APPLICATIONS, JSON.stringify(INITIAL_DEMO_APPLICATIONS));
       localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
+      localStorage.setItem(STORAGE_KEYS.IS_DEMO, 'true');
       return INITIAL_DEMO_APPLICATIONS;
     }
 
@@ -173,16 +193,19 @@ export function getStoredProfile(): UserProfile {
     const data = localStorage.getItem(STORAGE_KEYS.PROFILE);
     if (!data) return DEFAULT_USER_PROFILE;
     const parsed = JSON.parse(data);
-    // Automatically migrate legacy demo names if present
-    if (parsed.name === 'Alex Morgan' || parsed.name === 'Amit Kumar' || !parsed.name) {
-      parsed.name = 'Shubham Sharma';
-      parsed.email = 'sharmashubham23@gmail.com';
-      localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(parsed));
+
+    // If previously migrated to another user's email/name, update to requested user
+    if (
+      parsed.email === 'sharmashubham23@gmail.com' ||
+      parsed.email === 'amitkumar678793@gmail.com' ||
+      parsed.name === 'Amit Kumar' ||
+      parsed.name === 'Shubham Sharma'
+    ) {
+      parsed.name = 'Ankit Sharma';
+      parsed.email = 'ankitsharma@gmail.com';
+      saveStoredProfile(parsed);
     }
-    if (parsed.email === 'alex.morgan@workmail.com' || parsed.email === 'amitkumar678793@gmail.com') {
-      parsed.email = 'sharmashubham23@gmail.com';
-      localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(parsed));
-    }
+
     return { ...DEFAULT_USER_PROFILE, ...parsed };
   } catch {
     return DEFAULT_USER_PROFILE;

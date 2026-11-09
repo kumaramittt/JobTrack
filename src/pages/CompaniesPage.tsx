@@ -15,6 +15,7 @@ import { useJobContext } from '../context/JobContext';
 import { CompanyAvatar } from '../components/CompanyAvatar';
 import { EmptyState } from '../components/EmptyState';
 import { JobTypeBadge } from '../components/JobTypeBadge';
+import { formatDisplayDate } from '../utils/date';
 
 interface CompanyGroup {
   name: string;
@@ -250,7 +251,7 @@ export const CompaniesPage: React.FC = () => {
               {/* Action: view filtered applications */}
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <span className="text-[11px] font-mono text-slate-400">
-                  Latest: {c.latestDate}
+                  Latest: {formatDisplayDate(c.latestDate)}
                 </span>
 
                 <button

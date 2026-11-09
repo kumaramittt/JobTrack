@@ -43,6 +43,8 @@ import {
 import { useJobContext } from '../context/JobContext';
 import { EmptyState } from '../components/EmptyState';
 import { CompanyAvatar } from '../components/CompanyAvatar';
+import { getTodayDate, parseDateString } from '../utils/date';
+import { calculateApplicationMetrics } from '../utils/metrics';
 
 type TimeRangeFilter = '7d' | '30d' | '90d' | '12m' | 'all';
 
@@ -66,12 +68,9 @@ export const AnalyticsPage: React.FC = () => {
   const [filterRange, setFilterRange] = useState<TimeRangeFilter>('all');
   const [showMethodology, setShowMethodology] = useState<boolean>(false);
 
-  // Reference Date for Relative Filtering
-  // Handles current real time or 2026 simulated demo applications seamlessly
+  // Reference Date for Relative Filtering using dynamic IST date
   const refDate = useMemo(() => {
-    const now = new Date();
-    const simulated = new Date('2026-11-07T23:59:59Z');
-    return now.getTime() > simulated.getTime() ? now : simulated;
+    return getTodayDate();
   }, []);
 
   // 1. Filtered Applications based on Time Range
@@ -88,16 +87,16 @@ export const AnalyticsPage: React.FC = () => {
     const cutoff = refMs - days * 24 * 60 * 60 * 1000;
 
     return applications.filter((app) => {
-      const appTime = new Date(app.appliedDate).getTime();
+      const appTime = parseDateString(app.appliedDate).getTime();
       if (isNaN(appTime)) return true;
       return appTime >= cutoff;
     });
   }, [applications, filterRange, refDate]);
 
-  // 2. Summary Cards Metrics (Actual records, no hardcoding, zero-division safe)
+  // 2. Summary Cards Metrics (Actual records, synchronized via centralized calculateApplicationMetrics)
   const summaryMetrics = useMemo(() => {
-    const total = filteredApplications.length;
-    if (total === 0) {
+    const calculated = calculateApplicationMetrics(filteredApplications);
+    if (calculated.total === 0) {
       return {
         total: 0,
         interviewInvitations: 0,
@@ -109,31 +108,24 @@ export const AnalyticsPage: React.FC = () => {
       };
     }
 
-    const underReview = filteredApplications.filter((a) => a.status === 'Applied').length;
-    // Interview invitations = in Interview status, or Selected (progressed past interview), or explicitly scheduled interview
-    const interviewInvitations = filteredApplications.filter(
-      (a) => a.status === 'Interview' || a.status === 'Selected' || Boolean(a.interviewDate)
-    ).length;
-    const successfulOffers = filteredApplications.filter((a) => a.status === 'Selected').length;
-    const rejectedApplications = filteredApplications.filter((a) => a.status === 'Rejected').length;
-
-    const interviewConversionRate = ((interviewInvitations / total) * 100).toFixed(1);
-    const offerConversionRate = ((successfulOffers / total) * 100).toFixed(1);
+    const interviewConversionRate = ((calculated.interviewInvitations / calculated.total) * 100).toFixed(1);
+    const offerConversionRate = ((calculated.selected / calculated.total) * 100).toFixed(1);
 
     return {
-      total,
-      interviewInvitations,
-      successfulOffers,
-      rejectedApplications,
+      total: calculated.total,
+      interviewInvitations: calculated.interviewInvitations,
+      successfulOffers: calculated.selected,
+      rejectedApplications: calculated.rejected,
       interviewConversionRate,
       offerConversionRate,
-      underReview,
+      underReview: calculated.applied,
     };
   }, [filteredApplications]);
 
-  // 3. Job Search Performance Ratios
+  // 3. Job Search Performance Ratios (Standardized formulas, zero-division safe)
   const performanceMetrics = useMemo(() => {
-    const total = filteredApplications.length;
+    const calculated = calculateApplicationMetrics(filteredApplications);
+    const total = calculated.total;
     if (total === 0) {
       return {
         appToInterviewRate: '0.0',
@@ -144,46 +136,24 @@ export const AnalyticsPage: React.FC = () => {
       };
     }
 
-    const interviewsOrOffers = filteredApplications.filter(
-      (a) => a.status === 'Interview' || a.status === 'Selected' || Boolean(a.interviewDate)
-    ).length;
-    const offers = filteredApplications.filter((a) => a.status === 'Selected').length;
+    const invites = calculated.interviewInvitations;
+    const offers = calculated.selected;
 
     // Application to Interview Conversion Rate: (Interview + Selected) / Total
-    const appToInterviewRate = ((interviewsOrOffers / total) * 100).toFixed(1);
+    const appToInterviewRate = ((invites / total) * 100).toFixed(1);
 
     // Interview to Offer Conversion Rate: Offers / (Interviews + Offers)
-    const interviewToOfferRate =
-      interviewsOrOffers > 0 ? ((offers / interviewsOrOffers) * 100).toFixed(1) : '0.0';
+    const interviewToOfferRate = invites > 0 ? ((offers / invites) * 100).toFixed(1) : '0.0';
 
     // Overall Success Rate: Offers / Total
     const overallSuccessRate = ((offers / total) * 100).toFixed(1);
-
-    // Average time between application and interview
-    let totalDays = 0;
-    let validPairsCount = 0;
-
-    filteredApplications.forEach((app) => {
-      if (app.appliedDate && app.interviewDate) {
-        const d1 = new Date(app.appliedDate).getTime();
-        const d2 = new Date(app.interviewDate).getTime();
-        if (!isNaN(d1) && !isNaN(d2)) {
-          const diffDays = Math.max(0, Math.round((d2 - d1) / (1000 * 60 * 60 * 24)));
-          totalDays += diffDays;
-          validPairsCount += 1;
-        }
-      }
-    });
-
-    const avgDaysToInterview =
-      validPairsCount > 0 ? Math.round((totalDays / validPairsCount) * 10) / 10 : null;
 
     return {
       appToInterviewRate,
       interviewToOfferRate,
       overallSuccessRate,
-      avgDaysToInterview,
-      scheduledInterviewsCount: validPairsCount,
+      avgDaysToInterview: calculated.avgDaysToInterview,
+      scheduledInterviewsCount: calculated.scheduledRounds,
     };
   }, [filteredApplications]);
 

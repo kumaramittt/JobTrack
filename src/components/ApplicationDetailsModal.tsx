@@ -19,6 +19,7 @@ import { JobApplication, JobStatus } from '../types/job';
 import { CompanyAvatar } from './CompanyAvatar';
 import { StatusBadge } from './StatusBadge';
 import { JobTypeBadge } from './JobTypeBadge';
+import { formatDisplayDate } from '../utils/date';
 
 interface ApplicationDetailsModalProps {
   isOpen: boolean;
@@ -38,26 +39,6 @@ export const ApplicationDetailsModal: React.FC<ApplicationDetailsModalProps> = (
   onStatusChange,
 }) => {
   if (!isOpen || !application) return null;
-
-  // Format date nicely e.g., "Nov 01, 2026"
-  const formatDisplayDate = (dateStr: string) => {
-    try {
-      const parts = dateStr.split('-');
-      if (parts.length === 3) {
-        const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        if (!isNaN(d.getTime())) {
-          return d.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-          });
-        }
-      }
-      return dateStr;
-    } catch {
-      return dateStr;
-    }
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">

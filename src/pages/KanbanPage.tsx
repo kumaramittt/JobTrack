@@ -27,6 +27,7 @@ import { JobTypeBadge } from '../components/JobTypeBadge';
 import { ApplicationDetailsModal } from '../components/ApplicationDetailsModal';
 import { ApplicationModal } from '../components/ApplicationModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
+import { formatDisplayDate, getTodayDateString } from '../utils/date';
 
 interface KanbanColumnConfig {
   id: JobStatus;
@@ -107,26 +108,6 @@ export const KanbanPage: React.FC = () => {
 
   // Mobile quick move menu open card ID
   const [openMoveMenuId, setOpenMoveMenuId] = useState<string | null>(null);
-
-  // Format date helper e.g. "Nov 1, 2026"
-  const formatDisplayDate = (dateStr: string) => {
-    try {
-      const parts = dateStr.split('-');
-      if (parts.length === 3) {
-        const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        if (!isNaN(d.getTime())) {
-          return d.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-          });
-        }
-      }
-      return dateStr;
-    } catch {
-      return dateStr;
-    }
-  };
 
   // Filter applications by search query and job type
   const filteredApplications = useMemo(() => {
@@ -648,7 +629,7 @@ export const KanbanPage: React.FC = () => {
           role: '',
           location: '',
           jobType: 'Full-time',
-          appliedDate: new Date().toISOString().slice(0, 10),
+          appliedDate: getTodayDateString(),
           status: addInitialStatus,
           createdAt: '',
           updatedAt: '',
