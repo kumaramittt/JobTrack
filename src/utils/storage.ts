@@ -7,6 +7,7 @@ const STORAGE_KEYS = {
   NOTIFICATIONS: 'jobtrack_notifications_v1',
   INITIALIZED: 'jobtrack_initialized_v1',
   IS_DEMO: 'jobtrack_is_demo_v1',
+  AUTH_SESSION: 'jobtrack_auth_session_v1',
 };
 
 export const INITIAL_DEMO_APPLICATIONS: JobApplication[] = [
@@ -217,6 +218,36 @@ export function saveStoredProfile(profile: UserProfile): void {
     localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(profile));
   } catch (err) {
     console.error('Error saving profile', err);
+  }
+}
+
+export function clearStoredProfile(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.PROFILE);
+  } catch (err) {
+    console.error('Error clearing profile', err);
+  }
+}
+
+export function getStoredAuthSession(): { isAuthenticated: boolean; provider: 'google' | 'email' | 'guest' } {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.AUTH_SESSION);
+    if (!data) return { isAuthenticated: true, provider: 'email' };
+    const parsed = JSON.parse(data);
+    return {
+      isAuthenticated: Boolean(parsed.isAuthenticated),
+      provider: parsed.provider || 'email',
+    };
+  } catch {
+    return { isAuthenticated: true, provider: 'email' };
+  }
+}
+
+export function saveStoredAuthSession(session: { isAuthenticated: boolean; provider: 'google' | 'email' | 'guest' }): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.AUTH_SESSION, JSON.stringify(session));
+  } catch (err) {
+    console.error('Error saving auth session', err);
   }
 }
 

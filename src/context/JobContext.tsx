@@ -5,12 +5,16 @@ import {
   saveStoredApplications,
   getStoredProfile,
   saveStoredProfile,
+  clearStoredProfile,
   getStoredTheme,
   saveStoredTheme,
   getStoredNotifications,
   saveStoredNotifications,
   getStoredIsDemo,
   saveStoredIsDemo,
+  getStoredAuthSession,
+  saveStoredAuthSession,
+  DEFAULT_USER_PROFILE,
   INITIAL_DEMO_APPLICATIONS,
   INITIAL_NOTIFICATIONS,
 } from '../utils/storage';
@@ -31,6 +35,16 @@ interface JobContextType {
   searchQuery: string;
   isDemoData: boolean;
   metrics: ApplicationMetrics;
+  isAuthenticated: boolean;
+  authProvider: 'google' | 'email' | 'guest';
+  isGoogleModalOpen: boolean;
+  openGoogleModal: () => void;
+  closeGoogleModal: () => void;
+  loginWithGoogle: (googleData: { name: string; email: string; avatarUrl?: string }) => void;
+  loginWithEmail: (email: string, name?: string) => void;
+  loginAsDemo: () => void;
+  logout: () => void;
+  deleteProfile: (alsoDeleteApplications?: boolean) => void;
   toast: ToastNotification | null;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   hideToast: () => void;
@@ -58,6 +72,8 @@ export const JobProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [theme, setThemeState] = useState<ThemeMode>(getStoredTheme);
   const [notifications, setNotifications] = useState<NotificationItem[]>(getStoredNotifications);
   const [isDemoData, setIsDemoData] = useState<boolean>(getStoredIsDemo);
+  const [authSession, setAuthSession] = useState(getStoredAuthSession);
+  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [toast, setToast] = useState<ToastNotification | null>(null);
 
@@ -302,6 +318,94 @@ export const JobProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setNotifications([]);
   };
 
+  // Authentication & Profile lifecycle handlers
+  const openGoogleModal = () => setIsGoogleModalOpen(true);
+  const closeGoogleModal = () => setIsGoogleModalOpen(false);
+
+  const loginWithGoogle = (googleData: { name: string; email: string; avatarUrl?: string }) => {
+    const updatedProfile: UserProfile = {
+      ...profile,
+      name: googleData.name,
+      email: googleData.email,
+      avatarUrl: googleData.avatarUrl,
+      authProvider: 'google',
+      authTimestamp: new Date().toISOString(),
+      isDemoAccount: false,
+    };
+    setProfile(updatedProfile);
+    saveStoredProfile(updatedProfile);
+    const session = { isAuthenticated: true, provider: 'google' as const };
+    setAuthSession(session);
+    saveStoredAuthSession(session);
+    showToast(`Signed in with Google as ${googleData.name}`, 'success');
+  };
+
+  const loginWithEmail = (emailVal: string, nameVal?: string) => {
+    const updatedProfile: UserProfile = {
+      ...profile,
+      email: emailVal,
+      name: nameVal || profile.name || emailVal.split('@')[0],
+      authProvider: 'email',
+      authTimestamp: new Date().toISOString(),
+      isDemoAccount: false,
+    };
+    setProfile(updatedProfile);
+    saveStoredProfile(updatedProfile);
+    const session = { isAuthenticated: true, provider: 'email' as const };
+    setAuthSession(session);
+    saveStoredAuthSession(session);
+  };
+
+  const loginAsDemo = () => {
+    const updatedProfile: UserProfile = {
+      ...DEFAULT_USER_PROFILE,
+      authProvider: 'guest',
+      isDemoAccount: true,
+    };
+    setProfile(updatedProfile);
+    saveStoredProfile(updatedProfile);
+    const session = { isAuthenticated: true, provider: 'guest' as const };
+    setAuthSession(session);
+    saveStoredAuthSession(session);
+    resetDemoData();
+  };
+
+  const logout = () => {
+    const session = { isAuthenticated: false, provider: 'guest' as const };
+    setAuthSession(session);
+    saveStoredAuthSession(session);
+    showToast('You have been logged out of your session.', 'info');
+  };
+
+  const deleteProfile = (alsoDeleteApplications = true) => {
+    clearStoredProfile();
+    const blankProfile: UserProfile = {
+      name: 'Guest User',
+      email: '',
+      targetRole: 'Job Seeker',
+      location: '',
+      timezone: 'Asia/Kolkata',
+      isDemoAccount: false,
+      authProvider: 'guest',
+    };
+    setProfile(blankProfile);
+    saveStoredProfile(blankProfile);
+
+    if (alsoDeleteApplications) {
+      setApplications([]);
+      saveStoredApplications([]);
+      setNotifications([]);
+      saveStoredNotifications([]);
+      setIsDemoData(false);
+      saveStoredIsDemo(false);
+    }
+
+    const session = { isAuthenticated: false, provider: 'guest' as const };
+    setAuthSession(session);
+    saveStoredAuthSession(session);
+    showToast('Your profile and account have been deleted permanently.', 'info');
+  };
+
   return (
     <JobContext.Provider
       value={{
@@ -312,6 +416,16 @@ export const JobProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         searchQuery,
         isDemoData,
         metrics,
+        isAuthenticated: authSession.isAuthenticated,
+        authProvider: authSession.provider,
+        isGoogleModalOpen,
+        openGoogleModal,
+        closeGoogleModal,
+        loginWithGoogle,
+        loginWithEmail,
+        loginAsDemo,
+        logout,
+        deleteProfile,
         toast,
         showToast,
         hideToast,

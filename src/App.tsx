@@ -10,12 +10,14 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { KanbanPage } from './pages/KanbanPage';
 import { InterviewCalendarPage } from './pages/InterviewCalendarPage';
+import { LoginPage } from './pages/LoginPage';
 
 export default function App() {
   return (
     <JobProvider>
       <HashRouter>
         <Routes>
+          <Route path="/login" element={<LoginPage />} />
           <Route element={<DashboardLayout />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/applications" element={<MyApplicationsPage />} />

@@ -32,6 +32,14 @@ export interface UserProfile {
   avatarUrl?: string;
   timezone?: string;
   isDemoAccount?: boolean;
+  authProvider?: 'google' | 'email' | 'guest';
+  authTimestamp?: string;
+}
+
+export interface AuthSession {
+  isAuthenticated: boolean;
+  provider: 'google' | 'email' | 'guest';
+  lastLogin?: string;
 }
 
 export interface ApplicationMetrics {

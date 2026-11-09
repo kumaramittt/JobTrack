@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   User,
   Sun,
@@ -15,11 +16,17 @@ import {
   MapPin,
   ShieldAlert,
   Globe,
+  KeyRound,
+  LogOut,
+  ShieldCheck,
 } from 'lucide-react';
 import { useJobContext } from '../context/JobContext';
 import { exportApplicationsToCSV, parseApplicationsCSV } from '../utils/storage';
+import { GoogleSignInModal } from '../components/GoogleSignInModal';
+import { DeleteProfileModal } from '../components/DeleteProfileModal';
 
 export const SettingsPage: React.FC = () => {
+  const navigate = useNavigate();
   const {
     profile,
     updateProfile,
@@ -30,6 +37,13 @@ export const SettingsPage: React.FC = () => {
     clearAllData,
     resetDemoData,
     importApplications,
+    authProvider,
+    loginWithGoogle,
+    logout,
+    deleteProfile,
+    isGoogleModalOpen,
+    openGoogleModal,
+    closeGoogleModal,
   } = useJobContext();
 
   const [profileForm, setProfileForm] = useState({
@@ -44,6 +58,7 @@ export const SettingsPage: React.FC = () => {
   const [profileError, setProfileError] = useState<string | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showDeleteProfileModal, setShowDeleteProfileModal] = useState(false);
   const [importStatus, setImportStatus] = useState<{
     success?: boolean;
     message?: string;
@@ -298,7 +313,86 @@ export const SettingsPage: React.FC = () => {
         </form>
       </div>
 
-      {/* 2. THEME SELECTION */}
+      {/* 2. ACCOUNT AUTHENTICATION & GOOGLE SIGN-IN */}
+      <div className="p-6 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <KeyRound className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              Account Authentication & Security
+            </h3>
+          </div>
+          <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+            {profile.authProvider === 'google' ? 'Google OAuth Connected' : 'Email Authentication'}
+          </span>
+        </div>
+
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+          Manage how you sign in to JobTrack. Connect your Google account for instant single sign-on access across your devices.
+        </p>
+
+        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 shadow-2xs">
+              {profile.authProvider === 'google' ? (
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                </svg>
+              ) : (
+                <Mail className="w-5 h-5 text-indigo-500" />
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-900 dark:text-white">
+                  {profile.name}
+                </span>
+                {profile.authProvider === 'google' && (
+                  <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
+                    Google Verified
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {profile.email}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={openGoogleModal}
+              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg shadow-2xs transition-colors cursor-pointer"
+            >
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+              </svg>
+              <span>{profile.authProvider === 'google' ? 'Switch Google Account' : 'Sign in with Google'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                logout();
+                navigate('/login');
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Log Out</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. THEME SELECTION */}
       <div className="p-6 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
         <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
           <Sun className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
@@ -522,7 +616,7 @@ export const SettingsPage: React.FC = () => {
               className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 rounded-lg border border-rose-200 dark:border-rose-900 transition-colors cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              <span>Clear All Data & Start Fresh</span>
+              <span>Clear All Applications</span>
             </button>
           ) : (
             <div className="flex items-center gap-2 bg-rose-50 dark:bg-rose-950/60 p-2 rounded-lg border border-rose-200 dark:border-rose-900">
@@ -548,8 +642,36 @@ export const SettingsPage: React.FC = () => {
               </button>
             </div>
           )}
+
+          {/* Delete This Profile & Account */}
+          <button
+            type="button"
+            onClick={() => setShowDeleteProfileModal(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-red-700 dark:text-red-300 bg-red-100/80 dark:bg-red-950/70 hover:bg-red-200/80 dark:hover:bg-red-900/60 rounded-lg border border-red-300 dark:border-red-800 transition-colors cursor-pointer"
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+            <span>Delete This Profile...</span>
+          </button>
         </div>
       </div>
+
+      {/* Google Sign In Modal */}
+      <GoogleSignInModal
+        isOpen={isGoogleModalOpen}
+        onClose={closeGoogleModal}
+        onSignIn={loginWithGoogle}
+      />
+
+      {/* Delete Profile Modal */}
+      <DeleteProfileModal
+        isOpen={showDeleteProfileModal}
+        profile={profile}
+        onClose={() => setShowDeleteProfileModal(false)}
+        onConfirmDelete={(alsoDeleteApps) => {
+          deleteProfile(alsoDeleteApps);
+          navigate('/login');
+        }}
+      />
     </div>
   );
 };
